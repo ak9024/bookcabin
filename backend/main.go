@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -118,13 +120,13 @@ type (
 	}
 
 	Voucher struct {
-		ID          int64      `json:"id"`
-		Code        string     `json:"code"`
-		FlightID    int64      `json:"flight_id"`
-		Cabin       string     `json:"cabin"`
-		ExpiresAt   *time.Time `json:"expires_at,omitempty"`  // voucher time periode (RFC3339)
-		Redeemed    bool       `json:"redeemed"`              // redeemed is used to flag or mark the voucher is used or not!
-		ReadeemedAt *time.Time `json:"redeemed_at,omitempty"` // fill with date RFC3339 when the voucher is used
+		ID         int64      `json:"id"`
+		Code       string     `json:"code"`
+		FlightID   int64      `json:"flight_id"`
+		Cabin      string     `json:"cabin"`
+		ExpiresAt  *time.Time `json:"expires_at,omitempty"`  // voucher time periode (RFC3339)
+		Redeemed   int64      `json:"redeemed"`              // redeemed is used to flag or mark the voucher is used or not!
+		RedeemedAt *string    `json:"redeemed_at,omitempty"` // fill with date RFC3339 when the voucher is used
 	}
 
 	VoucherPayload struct {
@@ -134,13 +136,20 @@ type (
 		ExpiresAt time.Time `json:"expires_at"`
 	}
 
-	Assigment struct {
-		ID          int64  `json:"id"`
+	Assignment struct {
 		VoucherCode string `json:"voucher_code"`
 		SeatID      int64  `json:"seat_id"`
 		SeatLabel   string `json:"seat_label"`
 		Cabin       string `json:"cabin"`
-		Status      bool   `json:"status"`
+	}
+
+	AssignmentPayload struct {
+		VoucherCode string `json:"voucher_code"`
+	}
+
+	Cand struct {
+		ID    int64
+		Label string
 	}
 
 	ErrorResponse struct {
@@ -339,12 +348,18 @@ func getAllVouchers(c *fiber.Ctx) error {
 	var vouchers []Voucher
 	for rows.Next() {
 		var voucher Voucher
-		if err := rows.Scan(&voucher.ID, &voucher.FlightID, &voucher.Code, &voucher.Cabin, &voucher.Redeemed, &voucher.ExpiresAt, &voucher.ReadeemedAt); err != nil {
+		var redeemedAt sql.NullString
+		if err := rows.Scan(&voucher.ID, &voucher.FlightID, &voucher.Code, &voucher.Cabin, &voucher.Redeemed, &voucher.ExpiresAt, &redeemedAt); err != nil {
 			var er ErrorResponse
 			er.Code = fiber.StatusInternalServerError
 			er.Data = err.Error()
 			return c.Status(fiber.StatusInternalServerError).JSON(er)
 		}
+
+		if redeemedAt.Valid {
+			voucher.RedeemedAt = &redeemedAt.String
+		}
+
 		vouchers = append(vouchers, voucher)
 	}
 
@@ -389,14 +404,154 @@ func createNewVoucher(c *fiber.Ctx) error {
 }
 
 // @TODO
-// - [] Validate a voucers
-// - [] Validate a seats
-// - [] Add new assigments
+// - [] Handle dedup data with idempotency key
 func AddNewAssigments(c *fiber.Ctx) error {
-	var sr SucccessResponse
-	sr.Code = fiber.StatusCreated
-	sr.Data = "Success to create a new assigments"
-	return c.Status(fiber.StatusCreated).JSON(sr)
+	ap := new(AssignmentPayload)
+	if err := c.BodyParser(&ap); err != nil {
+		var er ErrorResponse
+		er.Code = fiber.StatusBadRequest
+		er.Data = err.Error()
+		return c.Status(fiber.StatusBadRequest).JSON(er)
+	}
+
+	if len(ap.VoucherCode) <= 0 {
+		var er ErrorResponse
+		er.Code = fiber.StatusBadRequest
+		er.Data = "voucher_code is required!"
+		return c.Status(fiber.StatusBadRequest).JSON(er)
+	}
+
+	const maxAttempts = 3
+	var lastError error
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		ctx, cancel := context.WithTimeout(c.Context(), 10*time.Second)
+		defer cancel()
+
+		tx, err := DB.BeginTx(ctx, &sql.TxOptions{})
+		if err != nil {
+			var er ErrorResponse
+			er.Code = fiber.StatusInternalServerError
+			er.Data = err.Error()
+			return c.Status(fiber.StatusInternalServerError).JSON(er)
+		}
+		defer tx.Rollback()
+
+		var voucherID, flightID int64
+		var cabin string
+		var redeemed int
+		var expires sql.NullString
+		err = tx.QueryRowContext(ctx, `SELECT id, flight_id, cabin, redeemed, COALESCE(expires_at,'')
+		FROM vouchers WHERE code=?`, ap.VoucherCode).Scan(&voucherID, &flightID, &cabin, &redeemed, &expires)
+
+		if errors.Is(err, sql.ErrNoRows) {
+			var er ErrorResponse
+			er.Code = fiber.StatusBadRequest
+			er.Data = "Voucher not found!"
+			return c.Status(fiber.StatusInternalServerError).JSON(er)
+		} else if err != nil {
+			var er ErrorResponse
+			er.Code = fiber.StatusInternalServerError
+			er.Data = err.Error()
+			return c.Status(fiber.StatusInternalServerError).JSON(er)
+		}
+
+		if redeemed == 1 {
+			var er ErrorResponse
+			er.Code = fiber.StatusBadRequest
+			er.Data = "Voucher already redeemed"
+			return c.Status(fiber.StatusBadRequest).JSON(er)
+		}
+
+		if expires.Valid && expires.String != "" {
+			if t, e := time.Parse(time.RFC3339, expires.String); e == nil && time.Now().After(t) {
+				var er ErrorResponse
+				er.Code = fiber.StatusBadRequest
+				er.Data = "Voucher expired!"
+				return c.Status(fiber.StatusBadRequest).JSON(er)
+			}
+		}
+
+		candidateSeatID, err := pickSeat(ctx, tx, flightID, cabin)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				var er ErrorResponse
+				er.Code = fiber.StatusBadRequest
+				er.Data = "No available seats in cabin!"
+				return c.Status(fiber.StatusBadRequest).JSON(er)
+			}
+			lastError = err
+			continue
+		}
+
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO seat_assignments(voucher_id, seat_id) VALUES(?, ?)
+				 ON CONFLICT(seat_id) DO NOTHING`, voucherID, candidateSeatID); err != nil {
+			lastError = err
+			continue
+		}
+
+		var count int
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM seat_assignments WHERE voucher_id=?`, voucherID).Scan(&count); err != nil {
+			lastError = err
+			continue
+		}
+
+		if count == 0 {
+			lastError = fmt.Errorf("seat taken concurrently")
+			continue
+		}
+
+		if _, err := tx.ExecContext(ctx, `UPDATE seats SET is_assigned=1 WHERE id=?`, candidateSeatID); err != nil {
+			lastError = err
+			continue
+		}
+
+		if _, err := tx.ExecContext(ctx, `UPDATE vouchers SET redeemed=1, redeemed_at=datetime('now') WHERE id=?`, voucherID); err != nil {
+			lastError = err
+			continue
+		}
+
+		if err := tx.Commit(); err != nil {
+			lastError = err
+			continue
+		}
+
+		var seatLabel string
+		_ = DB.QueryRow(`SELECT label FROM seats WHERE id=?`, candidateSeatID).Scan(&seatLabel)
+
+		var sr SucccessResponse
+		sr.Code = fiber.StatusCreated
+		sr.Data = Assignment{
+			VoucherCode: ap.VoucherCode,
+			Cabin:       cabin,
+			SeatID:      candidateSeatID,
+			SeatLabel:   seatLabel,
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(sr)
+	}
+
+	if lastError != nil {
+		var er ErrorResponse
+		er.Code = fiber.StatusBadRequest
+		er.Data = lastError.Error()
+		return c.Status(fiber.StatusBadRequest).JSON(er)
+	}
+
+	var er ErrorResponse
+	er.Code = fiber.StatusBadRequest
+	er.Data = "Contention"
+	return c.Status(fiber.StatusBadRequest).JSON(er)
+}
+
+func pickSeat(ctx context.Context, tx *sql.Tx, flightID int64, cabin string) (int64, error) {
+	var seatID int64
+	err := tx.QueryRowContext(ctx, `SELECT id FROM seats WHERE flight_id=? AND cabin=? AND is_assigned=0 ORDER BY random() LIMIT 1`, flightID, cabin).Scan(&seatID)
+	if err != nil {
+		return 0, err
+	}
+	return seatID, nil
 }
 
 func main() {
