@@ -1,10 +1,10 @@
 # backend
 
-Backend service to serve REST APIs submit voucher seat assigments for airline campaign.
+Backend service to serve REST APIs submit voucher seat assignments for airline campaign.
 
 ## Features
 
-- Submit voucher assigments endpoints.
+- Submit voucher assignments endpoints.
 - Create a new flights, seats, and vouchers.
 - List of all flights, seats, and vouchers.
 
