@@ -65,3 +65,13 @@ curl --location 'http://localhost:8080/api/v1/vouchers' \
     "cabin": "ECONOMY"
 }'
 ```
+
+Submit an assignments
+
+```shell
+curl --location 'http://localhost:8080/api/v1/assigments' \
+--header 'Content-Type: application/json' \
+--data '{
+    "voucher_code": "V2025X2"
+}'
+```
