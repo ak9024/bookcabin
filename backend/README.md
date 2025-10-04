@@ -25,7 +25,8 @@ go run .
 ## Configuration
 
 ```
-PORT=
+PORT=8080
+DB_PATH=./bookcabin.db
 ```
 
 ## Endpoints

@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -10,15 +12,38 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
 
-func initDB() {
+type Config struct {
+	Port   string
+	DBPath string
+}
+
+func LoadConfig() *Config {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./bookcabin.db"
+	}
+
+	return &Config{
+		Port:   port,
+		DBPath: dbPath,
+	}
+}
+
+func initDB(dbPath string) {
 	var err error
 
-	DB, err = sql.Open("sqlite3", "./bookcabin.db")
+	DB, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -375,7 +400,9 @@ func AddNewAssigments(c *fiber.Ctx) error {
 }
 
 func main() {
-	initDB()
+	cfg := LoadConfig()
+
+	initDB(cfg.DBPath)
 	defer DB.Close()
 
 	app := fiber.New()
@@ -406,5 +433,5 @@ func main() {
 	assigments := v1.Group("/assigments")
 	assigments.Post("/", AddNewAssigments)
 
-	app.Listen(":8080")
+	app.Listen(fmt.Sprintf(":%s", cfg.Port))
 }
