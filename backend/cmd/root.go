@@ -8,12 +8,11 @@ import (
 	"backend/internal/controller"
 	"backend/internal/repository"
 	"backend/pkg/db"
-	"log"
-	"os"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var rootCmd = &cobra.Command{
@@ -32,27 +31,28 @@ var server = &cobra.Command{
 		// init open connection
 		sqlConnection, err := db.NewSQLiteConnection(cfg.DBPath)
 		if err != nil {
-			log.Println("Error to init database connection!")
+			log.Error("Error to init database connection!")
 		}
 
 		// execute to insert database schema
 		if _, err := sqlConnection.Exec(db.SCHEMA); err != nil {
-			log.Println("Error to init database schema!")
+			log.Error("Error to init database schema!")
 		} else {
-			log.Println("Success to insert database schema!")
+			log.Info("Success to insert database schema!")
 		}
 
 		// repository (data layer)
 		flightsRepository := repository.NewFlightsRepository(sqlConnection)
+		vouchersRepository := repository.NewVouchersRepository(sqlConnection)
 
 		// controller (business layer)
 		flightsController := controller.NewFlightsController(flightsRepository)
+		vouchersController := controller.NewVouchersController(vouchersRepository)
 
 		// handler (presentation layer)
 		flightsHandler := handler.NewFlightsHandler(flightsController)
 		seatsHandler := handler.NewSeatsHandler()
-		vouchersHandler := handler.NewVouchersHandler()
-		assignmentsHandler := handler.NewAssignmentsHandler()
+		vouchersHandler := handler.NewVouchersHandler(vouchersController)
 
 		// init fiber
 		app := fiber.New(fiber.Config{})
@@ -61,7 +61,7 @@ var server = &cobra.Command{
 		middleware.Middleware(app)
 
 		// setup routes
-		http.Routes(app, flightsHandler, seatsHandler, vouchersHandler, assignmentsHandler)
+		http.Routes(app, flightsHandler, seatsHandler, vouchersHandler)
 
 		app.Listen(":" + cfg.Port)
 	},
@@ -73,7 +73,7 @@ func init() {
 
 func Exec() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 		os.Exit(1)
 	}
 }

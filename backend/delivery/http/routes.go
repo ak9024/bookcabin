@@ -11,7 +11,6 @@ func Routes(
 	flightsHandler *handler.FlightsHandler,
 	seatsHandler *handler.SeatsHandler,
 	vouchersHandler *handler.VouchersHandler,
-	assignmentsHandler *handler.AssignmentsHandler,
 ) {
 
 	api := app.Group("/api")
@@ -21,4 +20,9 @@ func Routes(
 	flights := v1.Group("/flights")
 	flights.Post("/", flightsHandler.Create)
 	flights.Get("/", flightsHandler.Get)
+
+	// vouchers
+	vouchers := v1.Group("/vouchers")
+	vouchers.Post("/", vouchersHandler.Create)
+	vouchers.Post("/assign", vouchersHandler.Assign)
 }

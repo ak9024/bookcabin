@@ -2,8 +2,8 @@ package db
 
 import (
 	"database/sql"
-	"log"
 
+	"github.com/gofiber/fiber/v2/log"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -13,6 +13,6 @@ func NewSQLiteConnection(dbPath string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	log.Println("Successfully connected to SQLite database!")
+	log.Info("Successfully connected to SQLite database!")
 	return db, nil
 }
