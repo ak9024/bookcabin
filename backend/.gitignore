@@ -1,3 +1,4 @@
 .env
-bookcabin.db
+*.db
 .DS_Store
+
