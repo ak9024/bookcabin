@@ -31,15 +31,14 @@ var server = &cobra.Command{
 		// init open connection
 		sqlConnection, err := db.NewSQLiteConnection(cfg.DBPath)
 		if err != nil {
-			log.Error("Error to init database connection!")
+			log.Fatalf("Failed to init database connection: %v", err)
 		}
 
 		// execute to insert database schema
 		if _, err := sqlConnection.Exec(db.SCHEMA); err != nil {
-			log.Error("Error to init database schema!")
-		} else {
-			log.Info("Success to insert database schema!")
+			log.Fatalf("Failed to init database schema: %v", err)
 		}
+		log.Info("Successfully initialized database schema!")
 
 		// init fiber
 		app := fiber.New(fiber.Config{})

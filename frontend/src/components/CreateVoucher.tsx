@@ -72,7 +72,7 @@ export function CreateVoucher({ onVoucherCreated }: CreateVoucherProps) {
     setSuccess(null);
 
     try {
-      const voucher = await voucherService.createVoucher(formData);
+      await voucherService.createVoucher(formData);
       setSuccess(`Voucher created successfully!`);
       setFormData({ code: '', flight_id: 0, cabin: '' });
 

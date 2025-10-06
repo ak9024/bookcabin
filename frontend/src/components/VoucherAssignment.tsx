@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { voucherService } from '@/services/voucher.service';
 import { ApiError } from '@/services/api';

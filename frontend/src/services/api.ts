@@ -3,13 +3,18 @@ import type { ApiResponse, ApiErrorResponse } from '@/types/api.types';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export class ApiError extends Error {
+  statusCode: number;
+  data?: unknown;
+
   constructor(
-    public statusCode: number,
+    statusCode: number,
     message: string,
-    public data?: unknown
+    data?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.data = data;
   }
 }
 
