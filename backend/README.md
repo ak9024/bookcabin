@@ -10,6 +10,49 @@ Backend service to serve REST APIs submit voucher seat assignments for airline c
 
 ## Architecture Overview
 
+![Architecture Overview](./docs/high-level-arch.png)
+
+## Architecture Patterns
+
+- Presentation Layer (delivery/http/)
+  - HTTP handlers
+  - DTOs for request/response
+  - Routes configuration
+- Business Layer (internal/controller/)
+  - Business logic orchestration
+  - Use case implementations
+- Data Layer (internal/repository/)
+  - Database access
+  - SQL queries with transactions
+- Domain Models (internal/models/)
+  - Core business entities
+
+## Sequence Diagram Voucher Assignments
+
+![Voucher Assignment](./docs/sq-voucher-assignment.png)
+
+## Directories
+
+```
+cmd
+config
+delivery/
+└── http/
+    ├── dto
+    ├── handler
+    ├── middlewares
+    └── routes.go
+internal/
+├── controller
+├── models
+└── repository
+main.go
+```
+
+- cmd is entry point for commands management
+- delivery is a presentation layers, can be use for http, CLI and etc.
+- internal modules to manage controller, models and repository
+
 ## Pre-Requisites
 
 - [Go](https://go.dev/doc/install)
@@ -69,7 +112,7 @@ curl --location 'http://localhost:8080/api/v1/vouchers' \
 Submit an assignments
 
 ```shell
-curl --location 'http://localhost:8080/api/v1/assigments' \
+curl --location 'http://localhost:8080/api/v1/vouchers/assigns' \
 --header 'Content-Type: application/json' \
 --data '{
     "voucher_code": "V2025X2"
