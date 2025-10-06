@@ -15,3 +15,7 @@ How to start this project in parallel.
 # ensure docker and docker compose installed in your local.
 docker compose up -d
 ```
+
+## Architecture Overview
+
+![arch](./arch.png)

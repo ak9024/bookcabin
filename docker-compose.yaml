@@ -8,8 +8,6 @@ services:
     environment:
       - PORT=8080
       - DB_PATH=/app/data/bookcabin.db
-    ports:
-      - "8080:8080"
     volumes:
       - backend-data:/app/data
     networks:
@@ -19,6 +17,10 @@ services:
     build:
       context: ./frontend/
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:3000/
+    depends_on:
+      - backend
     ports:
       - "3000:80"
     networks:
