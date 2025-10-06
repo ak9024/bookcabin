@@ -54,7 +54,7 @@ export function VoucherAssignment() {
             type="text"
             value={voucherCode}
             onChange={(e) => setVoucherCode(e.target.value)}
-            placeholder="e.g., VC-FLIGHT-12"
+            placeholder="e.g., VC-XX-XX"
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             disabled={isLoading}
           />

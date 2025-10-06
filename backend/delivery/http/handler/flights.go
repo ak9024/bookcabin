@@ -4,6 +4,7 @@ import (
 	"backend/delivery/http/dto"
 	"backend/internal/controller"
 	"backend/internal/models"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,9 +38,18 @@ func (fh *flightsHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	// Parse date string to time.Time
+	depDate, err := time.Parse("2006-01-02", p.DepDate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       "invalid date format, expected YYYY-MM-DD",
+		})
+	}
+
 	if err := fh.fc.Create(c.Context(), &models.CreateBulkFlight{
 		FlightNumbers: p.FlightNumbers,
-		DepDate:       p.DepDate,
+		DepDate:       depDate,
 	}); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
 			StatusCode: fiber.StatusBadRequest,
