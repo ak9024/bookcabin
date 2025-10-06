@@ -91,7 +91,7 @@ curl --location 'http://localhost:8080/api/v1/flights' \
 --header 'Content-Type: application/json' \
 --data '{
     "flight_numbers": ["GA33", "GA221"],
-    "dept_date": "2025-10-04"
+    "dep_date": "2025-10-04"
 }'
 ```
 
