@@ -25,15 +25,15 @@ func NewVouchersHandler(vouchersController controller.VouchersController) Vouche
 }
 
 func (vh *vouchersHandler) Create(c *fiber.Ctx) error {
-	vp := new(dto.CreateNewVoucherPayload)
-	if err := c.BodyParser(&vp); err != nil {
+	p := new(dto.CreateNewVoucherRequest)
+	if err := c.BodyParser(&p); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	if err := vh.vc.Create(c.Context(), &models.CreateNewVoucher{
-		Code:     vp.Code,
-		FlightID: vp.FlightID,
-		Cabin:    vp.Cabin,
+		Code:     p.Code,
+		FlightID: p.FlightID,
+		Cabin:    p.Cabin,
 	}); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
@@ -42,19 +42,19 @@ func (vh *vouchersHandler) Create(c *fiber.Ctx) error {
 }
 
 func (vh *vouchersHandler) Assigns(c *fiber.Ctx) error {
-	vp := new(dto.AssignVoucherPayload)
-	if err := c.BodyParser(&vp); err != nil {
+	p := new(dto.AssignVoucherRequest)
+	if err := c.BodyParser(&p); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	rows, err := vh.vc.Assigns(c.Context(), &models.AssignsRandomVoucher{
-		VoucherCode: vp.VoucherCode,
+	voucher, err := vh.vc.Assigns(c.Context(), &models.AssignsRandomVoucher{
+		VoucherCode: p.VoucherCode,
 	})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(rows)
+	return c.Status(fiber.StatusCreated).JSON(voucher)
 }
 
 func (vh *vouchersHandler) GetAll(c *fiber.Ctx) error {

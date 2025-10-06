@@ -12,17 +12,17 @@ type FlightsController interface {
 }
 
 type flightsController struct {
-	repo repository.FlightsRepository
+	fr repository.FlightsRepository
 }
 
-func NewFlightsController(flightsRepo repository.FlightsRepository) FlightsController {
+func NewFlightsController(fr repository.FlightsRepository) FlightsController {
 	return &flightsController{
-		repo: flightsRepo,
+		fr: fr,
 	}
 }
 
 func (fc *flightsController) Create(ctx context.Context, flights *models.CreateBulkFlight) error {
-	if err := fc.repo.Create(ctx, flights); err != nil {
+	if err := fc.fr.Create(ctx, flights); err != nil {
 		return err
 	}
 
@@ -30,7 +30,7 @@ func (fc *flightsController) Create(ctx context.Context, flights *models.CreateB
 }
 
 func (fc *flightsController) GetAll(ctx context.Context) (models.Flights, error) {
-	flights, err := fc.repo.GetAll(ctx)
+	flights, err := fc.fr.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}

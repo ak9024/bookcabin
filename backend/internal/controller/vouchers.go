@@ -13,17 +13,17 @@ type VouchersController interface {
 }
 
 type vouchersController struct {
-	repo repository.VouchersRepository
+	vr repository.VouchersRepository
 }
 
-func NewVouchersController(vouchersRepository repository.VouchersRepository) VouchersController {
+func NewVouchersController(vr repository.VouchersRepository) VouchersController {
 	return &vouchersController{
-		repo: vouchersRepository,
+		vr: vr,
 	}
 }
 
 func (vc *vouchersController) Create(ctx context.Context, cnv *models.CreateNewVoucher) error {
-	if err := vc.repo.Create(ctx, cnv); err != nil {
+	if err := vc.vr.Create(ctx, cnv); err != nil {
 		return err
 	}
 
@@ -31,7 +31,7 @@ func (vc *vouchersController) Create(ctx context.Context, cnv *models.CreateNewV
 }
 
 func (vc *vouchersController) Assigns(ctx context.Context, arv *models.AssignsRandomVoucher) (*models.VoucherAssigment, error) {
-	voucher, err := vc.repo.Assigns(ctx, arv)
+	voucher, err := vc.vr.Assigns(ctx, arv)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (vc *vouchersController) Assigns(ctx context.Context, arv *models.AssignsRa
 }
 
 func (vc *vouchersController) GetAll(ctx context.Context) (*models.Vouchers, error) {
-	vouchers, err := vc.repo.GetAll(ctx)
+	vouchers, err := vc.vr.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}

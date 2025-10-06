@@ -12,17 +12,17 @@ type SeatController interface {
 }
 
 type seatController struct {
-	seatRepo repository.SeatRepository
+	sr repository.SeatRepository
 }
 
-func NewSeatController(seatRepo repository.SeatRepository) SeatController {
+func NewSeatController(sr repository.SeatRepository) SeatController {
 	return &seatController{
-		seatRepo: seatRepo,
+		sr: sr,
 	}
 }
 
 func (sc *seatController) Create(ctx context.Context, cbs *models.CreateBulkSeat) error {
-	if err := sc.seatRepo.Create(ctx, cbs); err != nil {
+	if err := sc.sr.Create(ctx, cbs); err != nil {
 		return err
 	}
 
@@ -30,7 +30,7 @@ func (sc *seatController) Create(ctx context.Context, cbs *models.CreateBulkSeat
 }
 
 func (sc *seatController) GetAll(ctx context.Context) (*models.Seats, error) {
-	seats, err := sc.seatRepo.GetAll(ctx)
+	seats, err := sc.sr.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}

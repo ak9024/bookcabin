@@ -22,17 +22,18 @@ func NewFlightsHandler(flightsController controller.FlightsController) FlightsHa
 }
 
 func (fh *flightsHandler) Create(c *fiber.Ctx) error {
-	f := new(dto.FlightPayload)
-	if err := c.BodyParser(&f); err != nil {
+	p := new(dto.CreateBulkFlightRequest)
+	if err := c.BodyParser(&p); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
-	if !f.Validate() {
+
+	if !p.Validate() {
 		return c.Status(fiber.StatusBadRequest).JSON("invalid json")
 	}
 
 	if err := fh.fc.Create(c.Context(), &models.CreateBulkFlight{
-		FlightNumbers: f.FlightNumbers,
-		DepDate:       f.DepDate,
+		FlightNumbers: p.FlightNumbers,
+		DepDate:       p.DepDate,
 	}); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}

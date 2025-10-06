@@ -1,10 +1,10 @@
 package dto
 
-type AssignVoucherPayload struct {
+type AssignVoucherRequest struct {
 	VoucherCode string `json:"voucher_code"`
 }
 
-type CreateNewVoucherPayload struct {
+type CreateNewVoucherRequest struct {
 	Code     string `json:"code"`
 	FlightID int64  `json:"flight_id"`
 	Cabin    string `json:"cabin"` // ECONOMY|BUSINESS|FIRST
