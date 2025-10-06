@@ -41,6 +41,12 @@ var server = &cobra.Command{
 			log.Info("Success to insert database schema!")
 		}
 
+		// init fiber
+		app := fiber.New(fiber.Config{})
+
+		// middleware modules
+		middleware.Middleware(app)
+
 		// repository (data layer)
 		flightsRepository := repository.NewFlightsRepository(sqlConnection)
 		vouchersRepository := repository.NewVouchersRepository(sqlConnection)
@@ -53,12 +59,6 @@ var server = &cobra.Command{
 		flightsHandler := handler.NewFlightsHandler(flightsController)
 		seatsHandler := handler.NewSeatsHandler()
 		vouchersHandler := handler.NewVouchersHandler(vouchersController)
-
-		// init fiber
-		app := fiber.New(fiber.Config{})
-
-		// middleware modules
-		middleware.Middleware(app)
 
 		// setup routes
 		http.Routes(app, flightsHandler, seatsHandler, vouchersHandler)

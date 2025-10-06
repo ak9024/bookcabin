@@ -7,8 +7,9 @@ import (
 )
 
 type VouchersController interface {
-	Assign(ctx context.Context, arv *models.AssignRandomVoucher) (*models.Voucher, error)
 	Create(ctx context.Context, cnv *models.CreateNewVoucher) error
+	Assigns(ctx context.Context, arv *models.AssignsRandomVoucher) (*models.VoucherAssigment, error)
+	GetAll(ctx context.Context) (*models.Vouchers, error)
 }
 
 type vouchersController struct {
@@ -21,32 +22,28 @@ func NewVouchersController(vouchersRepository repository.VouchersRepository) Vou
 	}
 }
 
-func (vc *vouchersController) Assign(ctx context.Context, arv *models.AssignRandomVoucher) (*models.Voucher, error) {
-	const maxAttempts = 3
-	var lastError error
-	var v models.Voucher
-
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		voucher, err := vc.repo.Assign(ctx, arv)
-		if err != nil {
-			lastError = err
-			continue
-		}
-
-		v = *voucher
-	}
-
-	if lastError != nil {
-		return nil, lastError
-	}
-
-	return &v, nil
-}
-
 func (vc *vouchersController) Create(ctx context.Context, cnv *models.CreateNewVoucher) error {
 	if err := vc.repo.Create(ctx, cnv); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (vc *vouchersController) Assigns(ctx context.Context, arv *models.AssignsRandomVoucher) (*models.VoucherAssigment, error) {
+	voucher, err := vc.repo.Assigns(ctx, arv)
+	if err != nil {
+		return nil, err
+	}
+
+	return voucher, nil
+}
+
+func (vc *vouchersController) GetAll(ctx context.Context) (*models.Vouchers, error) {
+	vouchers, err := vc.repo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return vouchers, nil
 }

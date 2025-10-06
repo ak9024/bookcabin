@@ -8,9 +8,9 @@ import (
 
 func Routes(
 	app *fiber.App,
-	flightsHandler *handler.FlightsHandler,
-	seatsHandler *handler.SeatsHandler,
-	vouchersHandler *handler.VouchersHandler,
+	flightsHandler handler.FlightsHandler,
+	seatsHandler handler.SeatsHandler,
+	vouchersHandler handler.VouchersHandler,
 ) {
 
 	api := app.Group("/api")
@@ -19,10 +19,16 @@ func Routes(
 	// flights
 	flights := v1.Group("/flights")
 	flights.Post("/", flightsHandler.Create)
-	flights.Get("/", flightsHandler.Get)
+	flights.Get("/", flightsHandler.GetAll)
+
+	// seats
+	seats := v1.Group("/seats")
+	seats.Get("/", seatsHandler.Get)
+	seats.Post("/", seatsHandler.Create)
 
 	// vouchers
 	vouchers := v1.Group("/vouchers")
 	vouchers.Post("/", vouchersHandler.Create)
-	vouchers.Post("/assign", vouchersHandler.Assign)
+	vouchers.Get("/", vouchersHandler.GetAll)
+	vouchers.Post("/assigns", vouchersHandler.Assigns)
 }

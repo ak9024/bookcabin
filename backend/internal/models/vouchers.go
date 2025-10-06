@@ -15,13 +15,20 @@ type (
 		RedeemedAt *string        `json:"redeemed_at,omitempty"`
 	}
 
+	VoucherAssigment struct {
+		VoucherCode string `json:"voucher_code"`
+		Cabin       string `json:"cabin"`
+		SeatID      int64  `json:"seat_id"`
+		SeatLabel   string `json:"seat_label"`
+	}
+
 	CreateNewVoucher struct {
 		Code     string `json:"code"`
 		FlightID int64  `json:"flight_id"`
 		Cabin    string `json:"cabin"` // ECONOMY|BUSINESS|FIRST
 	}
 
-	AssignRandomVoucher struct {
+	AssignsRandomVoucher struct {
 		VoucherCode string `json:"voucher_code"`
 	}
 )

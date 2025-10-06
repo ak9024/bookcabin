@@ -8,17 +8,23 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type VouchersHandler struct {
+type VouchersHandler interface {
+	Create(c *fiber.Ctx) error
+	Assigns(c *fiber.Ctx) error
+	GetAll(c *fiber.Ctx) error
+}
+
+type vouchersHandler struct {
 	vc controller.VouchersController
 }
 
-func NewVouchersHandler(vouchersController controller.VouchersController) *VouchersHandler {
-	return &VouchersHandler{
+func NewVouchersHandler(vouchersController controller.VouchersController) VouchersHandler {
+	return &vouchersHandler{
 		vc: vouchersController,
 	}
 }
 
-func (vh *VouchersHandler) Create(c *fiber.Ctx) error {
+func (vh *vouchersHandler) Create(c *fiber.Ctx) error {
 	vp := new(dto.CreateNewVoucherPayload)
 	if err := c.BodyParser(&vp); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
@@ -29,24 +35,54 @@ func (vh *VouchersHandler) Create(c *fiber.Ctx) error {
 		FlightID: vp.FlightID,
 		Cabin:    vp.Cabin,
 	}); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-func (vh *VouchersHandler) Assign(c *fiber.Ctx) error {
+func (vh *vouchersHandler) Assigns(c *fiber.Ctx) error {
 	vp := new(dto.AssignVoucherPayload)
 	if err := c.BodyParser(&vp); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	voucher, err := vh.vc.Assign(c.Context(), &models.AssignRandomVoucher{
+	rows, err := vh.vc.Assigns(c.Context(), &models.AssignsRandomVoucher{
 		VoucherCode: vp.VoucherCode,
 	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(voucher)
+	return c.Status(fiber.StatusCreated).JSON(rows)
+}
+
+func (vh *vouchersHandler) GetAll(c *fiber.Ctx) error {
+	rows, err := vh.vc.GetAll(c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+	}
+
+	var vouchers dto.Vouchers
+	if rows != nil {
+		for _, v := range *rows {
+			voucher := dto.Voucher{
+				ID:         v.ID,
+				FlightID:   v.FlightID,
+				Code:       v.Code,
+				Cabin:      v.Cabin,
+				Redeemed:   v.Redeemed,
+				RedeemedAt: v.RedeemedAt,
+			}
+
+			if v.ExpiresAt.Valid {
+				voucher.ExpiresAt = v.ExpiresAt.String
+			}
+
+			vouchers = append(vouchers, voucher)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(vouchers)
 }

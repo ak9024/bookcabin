@@ -8,15 +8,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type FlightsHandler struct {
+type FlightsHandler interface {
+	GetAll(c *fiber.Ctx) error
+	Create(c *fiber.Ctx) error
+}
+
+type flightsHandler struct {
 	fc controller.FlightsController
 }
 
-func NewFlightsHandler(flightsController controller.FlightsController) *FlightsHandler {
-	return &FlightsHandler{fc: flightsController}
+func NewFlightsHandler(flightsController controller.FlightsController) FlightsHandler {
+	return &flightsHandler{fc: flightsController}
 }
 
-func (fh *FlightsHandler) Create(c *fiber.Ctx) error {
+func (fh *flightsHandler) Create(c *fiber.Ctx) error {
 	f := new(dto.FlightPayload)
 	if err := c.BodyParser(&f); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
@@ -29,16 +34,16 @@ func (fh *FlightsHandler) Create(c *fiber.Ctx) error {
 		FlightNumbers: f.FlightNumbers,
 		DepDate:       f.DepDate,
 	}); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-func (fh *FlightsHandler) Get(c *fiber.Ctx) error {
-	flights, err := fh.fc.Get(c.Context())
+func (fh *flightsHandler) GetAll(c *fiber.Ctx) error {
+	flights, err := fh.fc.GetAll(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	return c.Status(fiber.StatusOK).JSON(flights)

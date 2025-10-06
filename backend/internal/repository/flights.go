@@ -10,7 +10,7 @@ import (
 
 type FlightsRepository interface {
 	Create(ctx context.Context, flight *models.CreateBulkFlight) error
-	Get(ctx context.Context) (models.Flights, error)
+	GetAll(ctx context.Context) (models.Flights, error)
 }
 
 type flightsRepository struct {
@@ -41,7 +41,7 @@ func (fr *flightsRepository) Create(ctx context.Context, flight *models.CreateBu
 	return nil
 }
 
-func (fr *flightsRepository) Get(ctx context.Context) (models.Flights, error) {
+func (fr *flightsRepository) GetAll(ctx context.Context) (models.Flights, error) {
 	rows, err := fr.db.Query("SELECT id, flight_no, dep_date FROM flights")
 	if err != nil {
 		return nil, err
