@@ -23,7 +23,7 @@ func Routes(
 
 	// seats
 	seats := v1.Group("/seats")
-	seats.Get("/", seatsHandler.Get)
+	seats.Get("/", seatsHandler.GetAll)
 	seats.Post("/", seatsHandler.Create)
 
 	// vouchers

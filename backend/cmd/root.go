@@ -49,15 +49,17 @@ var server = &cobra.Command{
 
 		// repository (data layer)
 		flightsRepository := repository.NewFlightsRepository(sqlConnection)
+		seatsRepository := repository.NewSeatRepository(sqlConnection)
 		vouchersRepository := repository.NewVouchersRepository(sqlConnection)
 
 		// controller (business layer)
 		flightsController := controller.NewFlightsController(flightsRepository)
+		seatsController := controller.NewSeatController(seatsRepository)
 		vouchersController := controller.NewVouchersController(vouchersRepository)
 
 		// handler (presentation layer)
 		flightsHandler := handler.NewFlightsHandler(flightsController)
-		seatsHandler := handler.NewSeatsHandler()
+		seatsHandler := handler.NewSeatsHandler(seatsController)
 		vouchersHandler := handler.NewVouchersHandler(vouchersController)
 
 		// setup routes

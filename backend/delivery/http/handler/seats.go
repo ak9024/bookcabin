@@ -1,22 +1,51 @@
 package handler
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"backend/delivery/http/dto"
+	"backend/internal/controller"
+	"backend/internal/models"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 type SeatsHandler interface {
-	Get(c *fiber.Ctx) error
+	GetAll(c *fiber.Ctx) error
 	Create(c *fiber.Ctx) error
 }
 
-type seatsHandler struct{}
+type seatsHandler struct {
+	sc controller.SeatController
+}
 
-func NewSeatsHandler() SeatsHandler {
-	return &seatsHandler{}
+func NewSeatsHandler(sc controller.SeatController) SeatsHandler {
+	return &seatsHandler{
+		sc: sc,
+	}
 }
 
 func (sh *seatsHandler) Create(c *fiber.Ctx) error {
-	return nil
+	p := new(dto.CreateBulkSeatRequest)
+	if err := c.BodyParser(&p); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+	}
+
+	if err := sh.sc.Create(c.Context(), &models.CreateBulkSeat{
+		FlightID: p.FlightID,
+		Cabin:    p.Cabin,
+		Labels:   p.Labels,
+	}); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusCreated)
 }
 
-func (sh *seatsHandler) Get(c *fiber.Ctx) error {
-	return nil
+func (sh *seatsHandler) GetAll(c *fiber.Ctx) error {
+	seats, err := sh.sc.GetAll(c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+	}
+
+	return c.Status(fiber.StatusOK).JSON(seats)
 }
