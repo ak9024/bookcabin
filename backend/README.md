@@ -2,6 +2,12 @@
 
 Backend service to serve REST APIs submit voucher seat assignments for airline campaign.
 
+## Tech Stack
+
+- Go Fiber (HTTP Server)
+- SQLite (database)
+- Cobra (CLI)
+
 ## Features
 
 - Submit voucher assignments endpoints.
@@ -30,6 +36,10 @@ Backend service to serve REST APIs submit voucher seat assignments for airline c
 ## Sequence Diagram Voucher Assignments
 
 ![Voucher Assignment](./docs/sq-voucher-assignment.png)
+
+## DB Diagram
+
+![DB Diagram](./docs/db-diagram.png)
 
 ## Directories
 
