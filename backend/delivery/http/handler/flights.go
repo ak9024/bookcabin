@@ -4,6 +4,7 @@ import (
 	"backend/delivery/http/dto"
 	"backend/internal/controller"
 	"backend/internal/models"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,21 +25,42 @@ func NewFlightsHandler(flightsController controller.FlightsController) FlightsHa
 func (fh *flightsHandler) Create(c *fiber.Ctx) error {
 	p := new(dto.CreateBulkFlightRequest)
 	if err := c.BodyParser(&p); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       err.Error(),
+		})
 	}
 
 	if !p.Validate() {
-		return c.Status(fiber.StatusBadRequest).JSON("invalid json")
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       "invalid json",
+		})
+	}
+
+	// Parse date string to time.Time
+	depDate, err := time.Parse("2006-01-02", p.DepDate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       "invalid date format, expected YYYY-MM-DD",
+		})
 	}
 
 	if err := fh.fc.Create(c.Context(), &models.CreateBulkFlight{
 		FlightNumbers: p.FlightNumbers,
-		DepDate:       p.DepDate,
+		DepDate:       depDate,
 	}); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       err.Error(),
+		})
 	}
 
-	return c.SendStatus(fiber.StatusCreated)
+	return c.Status(fiber.StatusCreated).JSON(dto.JsonResponses{
+		StatusCode: fiber.StatusCreated,
+		Data:       "success to create a new flights",
+	})
 }
 
 func (fh *flightsHandler) GetAll(c *fiber.Ctx) error {
@@ -47,5 +69,8 @@ func (fh *flightsHandler) GetAll(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	return c.Status(fiber.StatusOK).JSON(flights)
+	return c.Status(fiber.StatusOK).JSON(dto.JsonResponses{
+		StatusCode: fiber.StatusOK,
+		Data:       flights,
+	})
 }

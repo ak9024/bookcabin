@@ -26,7 +26,10 @@ func NewSeatsHandler(sc controller.SeatController) SeatsHandler {
 func (sh *seatsHandler) Create(c *fiber.Ctx) error {
 	p := new(dto.CreateBulkSeatRequest)
 	if err := c.BodyParser(&p); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       err.Error(),
+		})
 	}
 
 	if err := sh.sc.Create(c.Context(), &models.CreateBulkSeat{
@@ -34,10 +37,16 @@ func (sh *seatsHandler) Create(c *fiber.Ctx) error {
 		Cabin:    p.Cabin,
 		Labels:   p.Labels,
 	}); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
+			StatusCode: fiber.StatusBadRequest,
+			Data:       err.Error(),
+		})
 	}
 
-	return c.SendStatus(fiber.StatusCreated)
+	return c.Status(fiber.StatusCreated).JSON(dto.JsonResponses{
+		StatusCode: fiber.StatusCreated,
+		Data:       "success to create a seats",
+	})
 }
 
 func (sh *seatsHandler) GetAll(c *fiber.Ctx) error {
@@ -47,5 +56,8 @@ func (sh *seatsHandler) GetAll(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	return c.Status(fiber.StatusOK).JSON(seats)
+	return c.Status(fiber.StatusOK).JSON(dto.JsonResponses{
+		StatusCode: fiber.StatusOK,
+		Data:       seats,
+	})
 }
