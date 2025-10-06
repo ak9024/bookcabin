@@ -15,6 +15,7 @@ export function CreateVoucher({ onVoucherCreated }: CreateVoucherProps) {
     code: '',
     flight_id: 0,
     cabin: 'ECONOMY',
+    expires_at: undefined,
   });
   const [seats, setSeats] = useState<Seat[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
@@ -72,9 +73,20 @@ export function CreateVoucher({ onVoucherCreated }: CreateVoucherProps) {
     setSuccess(null);
 
     try {
-      await voucherService.createVoucher(formData);
+      // Format expires_at to ISO 8601 (RFC3339) if provided
+      const submitData = { ...formData };
+      if (submitData.expires_at) {
+        // Convert from datetime-local format (YYYY-MM-DDTHH:mm) to ISO 8601 with timezone
+        const localDate = new Date(submitData.expires_at);
+        submitData.expires_at = localDate.toISOString();
+      } else {
+        // Remove empty expires_at field
+        delete submitData.expires_at;
+      }
+
+      await voucherService.createVoucher(submitData);
       setSuccess(`Voucher created successfully!`);
-      setFormData({ code: '', flight_id: 0, cabin: '' });
+      setFormData({ code: '', flight_id: 0, cabin: '', expires_at: undefined });
 
       if (onVoucherCreated) {
         onVoucherCreated();
@@ -173,6 +185,21 @@ export function CreateVoucher({ onVoucherCreated }: CreateVoucherProps) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="expires_at" className="block text-sm font-medium text-gray-700 mb-1">
+            Expiration Date (Optional)
+          </label>
+          <input
+            type="datetime-local"
+            id="expires_at"
+            value={formData.expires_at || ''}
+            onChange={(e) => setFormData({ ...formData, expires_at: e.target.value || undefined })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Select expiration date and time"
+          />
+          <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
         </div>
 
         <Button

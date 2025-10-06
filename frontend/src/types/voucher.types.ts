@@ -8,6 +8,7 @@ export interface CreateVoucherRequest {
   code: string;
   flight_id: number;
   cabin: string;
+  expires_at?: string;
 }
 
 export interface VoucherAssignmentData {

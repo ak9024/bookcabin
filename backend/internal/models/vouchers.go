@@ -23,9 +23,10 @@ type (
 	}
 
 	CreateNewVoucher struct {
-		Code     string `json:"code"`
-		FlightID int64  `json:"flight_id"`
-		Cabin    string `json:"cabin"` // ECONOMY|BUSINESS|FIRST
+		Code      string         `json:"code"`
+		FlightID  int64          `json:"flight_id"`
+		Cabin     string         `json:"cabin"` // ECONOMY|BUSINESS|FIRST
+		ExpiresAt sql.NullString `json:"expires_at"`
 	}
 
 	AssignsRandomVoucher struct {

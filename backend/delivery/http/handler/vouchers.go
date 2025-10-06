@@ -5,6 +5,7 @@ import (
 	"backend/delivery/http/validator"
 	"backend/internal/controller"
 	"backend/internal/models"
+	"database/sql"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -41,10 +42,16 @@ func (vh *vouchersHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	var expiresAt sql.NullString
+	if p.ExpiresAt != nil && *p.ExpiresAt != "" {
+		expiresAt = sql.NullString{String: *p.ExpiresAt, Valid: true}
+	}
+
 	if err := vh.vc.Create(c.Context(), &models.CreateNewVoucher{
-		Code:     p.Code,
-		FlightID: p.FlightID,
-		Cabin:    p.Cabin,
+		Code:      p.Code,
+		FlightID:  p.FlightID,
+		Cabin:     p.Cabin,
+		ExpiresAt: expiresAt,
 	}); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
 			StatusCode: fiber.StatusBadRequest,
@@ -113,7 +120,8 @@ func (vh *vouchersHandler) GetAll(c *fiber.Ctx) error {
 			}
 
 			if v.ExpiresAt.Valid {
-				voucher.ExpiresAt = v.ExpiresAt.String
+				expiresAt := v.ExpiresAt.String
+				voucher.ExpiresAt = &expiresAt
 			}
 
 			vouchers = append(vouchers, voucher)

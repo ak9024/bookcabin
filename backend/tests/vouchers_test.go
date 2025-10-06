@@ -120,6 +120,26 @@ func TestCreateVoucher(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "Create voucher with valid expires_at",
+			requestBody: map[string]any{
+				"code":       "VOUCHER900",
+				"flight_id":  1,
+				"cabin":      "ECONOMY",
+				"expires_at": "2025-12-31T23:59:59Z",
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name: "Invalid expires_at format",
+			requestBody: map[string]any{
+				"code":       "VOUCHER1000",
+				"flight_id":  1,
+				"cabin":      "ECONOMY",
+				"expires_at": "2025-12-31", // Missing time portion
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {

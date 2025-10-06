@@ -33,7 +33,7 @@ func (vr *vouchersRepository) Create(ctx context.Context, cnv *models.CreateNewV
 		return err
 	}
 
-	if _, err := vr.db.Exec(`INSERT INTO vouchers(code, flight_id, cabin) VALUES(?, ?, ?)`, cnv.Code, cnv.FlightID, cnv.Cabin); err != nil {
+	if _, err := vr.db.Exec(`INSERT INTO vouchers(code, flight_id, cabin, expires_at) VALUES(?, ?, ?, ?)`, cnv.Code, cnv.FlightID, cnv.Cabin, cnv.ExpiresAt); err != nil {
 		return err
 	}
 
