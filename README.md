@@ -1,4 +1,4 @@
 # bookcabin
 
-- [Backend](/backend/README.md)
-- [Frontend](./frontend/README.md)
+- [backend](/backend/README.md)
+- [frontend](./frontend/README.md)
