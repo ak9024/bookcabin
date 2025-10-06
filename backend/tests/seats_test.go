@@ -9,7 +9,6 @@ func TestCreateSeats(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// First create a flight
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -51,16 +50,75 @@ func TestCreateSeats(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
-		// Note: Empty labels currently accepted by API - could be enhanced with validation
-		// {
-		// 	name: "Empty labels",
-		// 	requestBody: map[string]any{
-		// 		"flight_id": 1,
-		// 		"cabin":     "ECONOMY",
-		// 		"labels":    []string{},
-		// 	},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
+		{
+			name: "Empty labels",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"cabin":     "ECONOMY",
+				"labels":    []string{},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Missing flight_id",
+			requestBody: map[string]any{
+				"cabin":  "ECONOMY",
+				"labels": []string{"4A"},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Zero flight_id",
+			requestBody: map[string]any{
+				"flight_id": 0,
+				"cabin":     "ECONOMY",
+				"labels":    []string{"5A"},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Negative flight_id",
+			requestBody: map[string]any{
+				"flight_id": -1,
+				"cabin":     "ECONOMY",
+				"labels":    []string{"6A"},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Missing cabin field",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"labels":    []string{"7A"},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid cabin value",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"cabin":     "PREMIUM",
+				"labels":    []string{"8A"},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Empty string in labels array",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"cabin":     "ECONOMY",
+				"labels":    []string{"9A", ""},
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Missing labels field",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"cabin":     "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -81,7 +139,6 @@ func TestGetAllSeats(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Create flight and seats
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -101,7 +158,6 @@ func TestGetAllSeats(t *testing.T) {
 		t.Fatalf("Failed to create seats: %v", err)
 	}
 
-	// Get all seats
 	resp, err := testApp.makeRequest("GET", "/api/v1/seats", nil)
 	if err != nil {
 		t.Fatalf("Failed to get seats: %v", err)
@@ -111,7 +167,6 @@ func TestGetAllSeats(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, resp.Code)
 	}
 
-	// Parse response
 	var result map[string]any
 	parseResponse(t, resp, &result)
 

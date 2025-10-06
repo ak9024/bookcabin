@@ -54,6 +54,43 @@ func TestCreateFlights(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Missing flight_numbers field",
+			requestBody: map[string]any{
+				"dep_date": "2025-10-10",
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, statusCode int, body string) {
+				if statusCode != http.StatusBadRequest {
+					t.Errorf("Expected status %d, got %d", http.StatusBadRequest, statusCode)
+				}
+			},
+		},
+		{
+			name: "Missing dep_date field",
+			requestBody: map[string]any{
+				"flight_numbers": []string{"GA400"},
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, statusCode int, body string) {
+				if statusCode != http.StatusBadRequest {
+					t.Errorf("Expected status %d, got %d", http.StatusBadRequest, statusCode)
+				}
+			},
+		},
+		{
+			name: "Empty string in flight_numbers array",
+			requestBody: map[string]any{
+				"flight_numbers": []string{"GA500", ""},
+				"dep_date":       "2025-10-10",
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, statusCode int, body string) {
+				if statusCode != http.StatusBadRequest {
+					t.Errorf("Expected status %d, got %d", http.StatusBadRequest, statusCode)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

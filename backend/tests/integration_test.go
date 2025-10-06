@@ -7,12 +7,10 @@ import (
 	"testing"
 )
 
-// TestEndToEndWorkflow tests the complete flow from creating a flight to assigning a voucher
 func TestEndToEndWorkflow(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Step 1: Create a flight
 	t.Log("Step 1: Creating flight")
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA500"},
@@ -26,7 +24,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 		t.Fatalf("Expected status %d, got %d. Body: %s", http.StatusCreated, resp.Code, resp.Body.String())
 	}
 
-	// Step 2: Create seats for the flight
 	t.Log("Step 2: Creating seats")
 	seatsBody := map[string]any{
 		"flight_id": 1,
@@ -41,7 +38,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 		t.Fatalf("Expected status %d, got %d", http.StatusCreated, resp.Code)
 	}
 
-	// Step 3: Create a voucher
 	t.Log("Step 3: Creating voucher")
 	voucherBody := map[string]any{
 		"code":      "XMAS2025",
@@ -56,7 +52,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 		t.Fatalf("Expected status %d, got %d", http.StatusCreated, resp.Code)
 	}
 
-	// Step 4: Assign the voucher to a seat
 	t.Log("Step 4: Assigning voucher to seat")
 	assignBody := map[string]any{
 		"voucher_code": "XMAS2025",
@@ -69,7 +64,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 		t.Fatalf("Expected status %d, got %d. Body: %s", http.StatusCreated, resp.Code, resp.Body.String())
 	}
 
-	// Parse assignment response
 	var assignResult map[string]any
 	parseResponse(t, resp, &assignResult)
 
@@ -78,7 +72,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 		t.Fatal("Expected data in assignment response")
 	}
 
-	// Verify assignment details
 	if data["voucher_code"] != "XMAS2025" {
 		t.Errorf("Expected voucher_code XMAS2025, got %v", data["voucher_code"])
 	}
@@ -91,7 +84,6 @@ func TestEndToEndWorkflow(t *testing.T) {
 
 	t.Logf("Successfully assigned voucher to seat: %s", data["seat_label"])
 
-	// Step 5: Verify voucher is marked as redeemed
 	t.Log("Step 5: Verifying voucher is redeemed")
 	resp, err = testApp.makeRequest("GET", "/api/v1/vouchers", nil)
 	if err != nil {
@@ -115,12 +107,10 @@ func TestEndToEndWorkflow(t *testing.T) {
 	t.Log("End-to-end workflow completed successfully!")
 }
 
-// TestMultipleFlightsAndVouchers tests handling multiple flights and vouchers
 func TestMultipleFlightsAndVouchers(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Create multiple flights
 	for i := 1; i <= 3; i++ {
 		flightBody := map[string]any{
 			"flight_numbers": []string{fmt.Sprintf("GA%d00", i)},
@@ -131,7 +121,6 @@ func TestMultipleFlightsAndVouchers(t *testing.T) {
 			t.Fatalf("Failed to create flight %d", i)
 		}
 
-		// Create seats for each flight
 		seatsBody := map[string]any{
 			"flight_id": i,
 			"cabin":     "ECONOMY",
@@ -142,7 +131,6 @@ func TestMultipleFlightsAndVouchers(t *testing.T) {
 			t.Fatalf("Failed to create seats for flight %d", i)
 		}
 
-		// Create voucher for each flight
 		voucherBody := map[string]any{
 			"code":      fmt.Sprintf("VOUCHER%d", i),
 			"flight_id": i,
@@ -154,7 +142,6 @@ func TestMultipleFlightsAndVouchers(t *testing.T) {
 		}
 	}
 
-	// Assign all vouchers
 	for i := 1; i <= 3; i++ {
 		assignBody := map[string]any{
 			"voucher_code": fmt.Sprintf("VOUCHER%d", i),
@@ -168,19 +155,16 @@ func TestMultipleFlightsAndVouchers(t *testing.T) {
 	t.Log("Successfully handled multiple flights and vouchers")
 }
 
-// TestConcurrentVoucherAssignments tests concurrent voucher assignments
 func TestConcurrentVoucherAssignments(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight with limited seats
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA999"},
 		"dep_date":       "2025-11-11",
 	}
 	testApp.makeRequest("POST", "/api/v1/flights", flightBody)
 
-	// Create 3 seats
 	seatsBody := map[string]any{
 		"flight_id": 1,
 		"cabin":     "ECONOMY",
@@ -188,7 +172,6 @@ func TestConcurrentVoucherAssignments(t *testing.T) {
 	}
 	testApp.makeRequest("POST", "/api/v1/seats", seatsBody)
 
-	// Create 5 vouchers (more than available seats)
 	for i := 1; i <= 5; i++ {
 		voucherBody := map[string]any{
 			"code":      fmt.Sprintf("CONCURRENT%d", i),
@@ -198,7 +181,6 @@ func TestConcurrentVoucherAssignments(t *testing.T) {
 		testApp.makeRequest("POST", "/api/v1/vouchers", voucherBody)
 	}
 
-	// Try to assign all vouchers concurrently
 	var wg sync.WaitGroup
 	results := make([]int, 5)
 
@@ -216,7 +198,6 @@ func TestConcurrentVoucherAssignments(t *testing.T) {
 
 	wg.Wait()
 
-	// Count successful assignments
 	successCount := 0
 	failedCount := 0
 	for _, code := range results {
@@ -235,12 +216,10 @@ func TestConcurrentVoucherAssignments(t *testing.T) {
 		t.Errorf("Expected total of 5 assignments, got %d", total)
 	}
 
-	// Should have at least 1 successful
 	if successCount < 1 {
 		t.Errorf("Expected at least 1 successful assignment, got %d", successCount)
 	}
 
-	// Should not exceed seat count
 	if successCount > 3 {
 		t.Errorf("Expected at most 3 successful assignments, got %d", successCount)
 	}
@@ -248,19 +227,16 @@ func TestConcurrentVoucherAssignments(t *testing.T) {
 	t.Logf("Concurrent assignments: %d successful, %d failed (as expected)", successCount, failedCount)
 }
 
-// TestMixedCabinClasses tests vouchers and seats for different cabin classes
 func TestMixedCabinClasses(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Create flight
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA777"},
 		"dep_date":       "2025-10-20",
 	}
 	testApp.makeRequest("POST", "/api/v1/flights", flightBody)
 
-	// Create seats for different cabins
 	cabins := []string{"ECONOMY", "BUSINESS", "FIRST"}
 	for _, cabin := range cabins {
 		seatsBody := map[string]any{
@@ -274,7 +250,6 @@ func TestMixedCabinClasses(t *testing.T) {
 		}
 	}
 
-	// Create vouchers for each cabin
 	for i, cabin := range cabins {
 		voucherBody := map[string]any{
 			"code":      fmt.Sprintf("VIP%s%d", cabin, i),
@@ -287,7 +262,6 @@ func TestMixedCabinClasses(t *testing.T) {
 		}
 	}
 
-	// Assign vouchers for each cabin
 	for i, cabin := range cabins {
 		assignBody := map[string]any{
 			"voucher_code": fmt.Sprintf("VIP%s%d", cabin, i),
@@ -297,7 +271,6 @@ func TestMixedCabinClasses(t *testing.T) {
 			t.Errorf("Failed to assign voucher for %s cabin", cabin)
 		}
 
-		// Verify assigned to correct cabin
 		var result map[string]any
 		parseResponse(t, resp, &result)
 		data := result["data"].(map[string]any)

@@ -9,7 +9,6 @@ func TestCreateVoucher(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight and seats
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -61,6 +60,66 @@ func TestCreateVoucher(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "Missing code field",
+			requestBody: map[string]any{
+				"flight_id": 1,
+				"cabin":     "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Empty code string",
+			requestBody: map[string]any{
+				"code":      "",
+				"flight_id": 1,
+				"cabin":     "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Missing flight_id",
+			requestBody: map[string]any{
+				"code":  "VOUCHER400",
+				"cabin": "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Zero flight_id",
+			requestBody: map[string]any{
+				"code":      "VOUCHER500",
+				"flight_id": 0,
+				"cabin":     "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Negative flight_id",
+			requestBody: map[string]any{
+				"code":      "VOUCHER600",
+				"flight_id": -1,
+				"cabin":     "ECONOMY",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Missing cabin field",
+			requestBody: map[string]any{
+				"code":      "VOUCHER700",
+				"flight_id": 1,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid cabin value",
+			requestBody: map[string]any{
+				"code":      "VOUCHER800",
+				"flight_id": 1,
+				"cabin":     "PREMIUM",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -81,7 +140,6 @@ func TestGetAllVouchers(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight, seats, and voucher
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -111,7 +169,6 @@ func TestGetAllVouchers(t *testing.T) {
 		t.Fatalf("Failed to create voucher: %v", err)
 	}
 
-	// Get all vouchers
 	resp, err := testApp.makeRequest("GET", "/api/v1/vouchers", nil)
 	if err != nil {
 		t.Fatalf("Failed to get vouchers: %v", err)
@@ -133,7 +190,6 @@ func TestAssignVoucher(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight, seats, and voucher
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -182,6 +238,18 @@ func TestAssignVoucher(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "Missing voucher_code field",
+			requestBody:    map[string]any{},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Empty voucher_code string",
+			requestBody: map[string]any{
+				"voucher_code": "",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -195,7 +263,6 @@ func TestAssignVoucher(t *testing.T) {
 				t.Errorf("Expected status %d, got %d. Body: %s", tt.expectedStatus, resp.Code, resp.Body.String())
 			}
 
-			// For successful assignment, verify response contains seat assignment
 			if tt.expectedStatus == http.StatusCreated {
 				var result map[string]any
 				parseResponse(t, resp, &result)
@@ -221,7 +288,6 @@ func TestAssignVoucherAlreadyRedeemed(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight, seats, and voucher
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -242,7 +308,6 @@ func TestAssignVoucherAlreadyRedeemed(t *testing.T) {
 	}
 	testApp.makeRequest("POST", "/api/v1/vouchers", voucherBody)
 
-	// Assign voucher first time
 	assignBody := map[string]any{
 		"voucher_code": "VOUCHER100",
 	}
@@ -251,7 +316,6 @@ func TestAssignVoucherAlreadyRedeemed(t *testing.T) {
 		t.Fatalf("First assignment should succeed, got status %d", resp.Code)
 	}
 
-	// Try to assign again - should fail
 	resp, err := testApp.makeRequest("POST", "/api/v1/vouchers/assigns", assignBody)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
@@ -266,7 +330,6 @@ func TestAssignVoucherNoSeatsAvailable(t *testing.T) {
 	testApp := setupTestApp(t)
 	defer testApp.cleanup()
 
-	// Setup: Create flight with only 1 seat
 	flightBody := map[string]any{
 		"flight_numbers": []string{"GA100"},
 		"dep_date":       "2025-10-10",
@@ -280,7 +343,6 @@ func TestAssignVoucherNoSeatsAvailable(t *testing.T) {
 	}
 	testApp.makeRequest("POST", "/api/v1/seats", seatsBody)
 
-	// Create 2 vouchers
 	voucher1Body := map[string]any{
 		"code":      "VOUCHER1",
 		"flight_id": 1,
@@ -295,7 +357,6 @@ func TestAssignVoucherNoSeatsAvailable(t *testing.T) {
 	}
 	testApp.makeRequest("POST", "/api/v1/vouchers", voucher2Body)
 
-	// Assign first voucher - should succeed
 	assign1 := map[string]any{
 		"voucher_code": "VOUCHER1",
 	}
@@ -304,7 +365,6 @@ func TestAssignVoucherNoSeatsAvailable(t *testing.T) {
 		t.Fatalf("First assignment should succeed, got status %d", resp1.Code)
 	}
 
-	// Assign second voucher - should fail (no seats available)
 	assign2 := map[string]any{
 		"voucher_code": "VOUCHER2",
 	}

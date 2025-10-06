@@ -2,6 +2,7 @@ package handler
 
 import (
 	"backend/delivery/http/dto"
+	"backend/delivery/http/validator"
 	"backend/internal/controller"
 	"backend/internal/models"
 	"time"
@@ -31,14 +32,13 @@ func (fh *flightsHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	if !p.Validate() {
+	if err := validator.ValidateStruct(p); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{
 			StatusCode: fiber.StatusBadRequest,
-			Data:       "invalid json",
+			Data:       validator.FormatValidationErrors(err),
 		})
 	}
 
-	// Parse date string to time.Time
 	depDate, err := time.Parse("2006-01-02", p.DepDate)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.JsonResponses{

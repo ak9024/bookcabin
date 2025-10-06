@@ -1,13 +1,13 @@
 package dto
 
 type AssignVoucherRequest struct {
-	VoucherCode string `json:"voucher_code"`
+	VoucherCode string `json:"voucher_code" validate:"required,min=1"`
 }
 
 type CreateNewVoucherRequest struct {
-	Code     string `json:"code"`
-	FlightID int64  `json:"flight_id"`
-	Cabin    string `json:"cabin"` // ECONOMY|BUSINESS|FIRST
+	Code     string `json:"code" validate:"required,min=1"`
+	FlightID int64  `json:"flight_id" validate:"required,gt=0"`
+	Cabin    string `json:"cabin" validate:"required,oneof=ECONOMY BUSINESS FIRST"` // ECONOMY|BUSINESS|FIRST
 }
 
 type Voucher struct {
